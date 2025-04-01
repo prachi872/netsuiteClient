@@ -43,7 +43,6 @@
       <if condition="systemMessageRemoteId == null">
         <return error="true" message="Failed to create SystemMessageRemote. No valid ID returned."/>
       </if>
-
       <!-- Step 3: Check for existing entry in PartySystemMessageRemote -->
       <entity-find entity-name="PartySystemMessageRemote" list="existingRecords">
         <econdition field-name="partyId" value="${partyId}"/>

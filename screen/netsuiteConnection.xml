@@ -19,10 +19,9 @@
   <widgets>
     <container-dialog id="CreateUserNetsuiteAccountDialog" button-text="Create Netsuite Account">
       <form-single name="CreateUserNetsuiteAccount" transition="createNetsuiteConnection">
-
         <!-- form fields -->
         <field name="username">
-          <default-field title="User Name">
+          <default-field title="Netsuite Account Id">
             <text-line size="20"/>
           </default-field>
         </field>

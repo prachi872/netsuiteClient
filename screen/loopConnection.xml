@@ -1,44 +1,32 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- Screen definition for creating a user account -->
+<!-- Updated screen definition for creating a Loop user account -->
 <screen
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
     xsi:noNamespaceSchemaLocation="http://moqui.org/xsd/xml-screen-1.4.xsd"
-    default-menu-title="Create User Account"
+    default-menu-title="Create LOOP Account"
     default-menu-index="1"
     require-authentication="anonymous-all">
+
   <!-- Transition to user account details screen -->
   <transition name="loopUserAccountDetail">
     <default-response url="../loopUserAccountDetail"/>
   </transition>
-  <!-- Transition to create a new user account -->
+
+  <!-- Transition to create a new user account using the updated service -->
   <transition name="createLoopConnection">
-    <service-call name="loopService.create#SystemMessage" in-map="context"/>
+    <service-call name="LoopServices.create#LoopSystemMessageRemote" in-map="context"/>
     <default-response url="."/>
   </transition>
-  <!-- Dialog container for creating a user account -->
+
+  <!-- Dialog container for creating a Loop user account -->
   <widgets>
     <container-dialog id="CreateUserLoopAccountDialog" button-text="Create Loop Account">
       <form-single name="CreateUserLoopAccount" transition="createLoopConnection">
 
-        <!-- form fields -->
-        <field name="username">
-          <default-field title="User Name">
-            <text-line size="20"/>
-          </default-field>
-        </field>
-        <field name="organizationName">
-          <default-field title="Organization Name">
-            <text-line size="40"/>
-          </default-field>
-        </field>
-        <field name="loopUrl">
-          <default-field title="Loop URL">
+        <!-- Form fields -->
+        <field name="accessKey">
+          <default-field title="Access Key">
             <text-line size="30"/>
-          </default-field>
-        </field>
-        <field name="Password">
-          <default-field title="Password">
-            <password size="15"/>
           </default-field>
         </field>
         <!-- Submit Button -->

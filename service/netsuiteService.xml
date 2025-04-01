@@ -1,14 +1,14 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <services xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
           xsi:noNamespaceSchemaLocation="http://moqui.org/xsd/service-definition-3.xsd">
-  <service verb="create" noun="SystemMessageRemote" authenticate="anonymous-all">
+  <service verb="create" noun="NetsuiteSystemMessageRemote" authenticate="anonymous-all">
     <description>
       Creates a new SystemMessage entry to store user account details.
     </description>
     <in-parameters>
       <parameter name="username" required="true"/>
       <parameter name="organizationName" required="true"/>
-      <parameter name="sftpUrl" required="true"/>
+      <parameter name="loopUrl" required="true"/>
       <parameter name="password" required="true"/>
     </in-parameters>
     <out-parameters>
@@ -21,7 +21,7 @@
                     in-map="[
                               username:username,
                               description:'User account created for ' + organizationName,
-                              sendUrl:sftpUrl,
+                              sendUrl:loopUrl,
                               password:password]"
                     out-map="messageOut"/>
 
@@ -42,7 +42,7 @@
       <!-- Retrieve the partyId -->
       <set field="partyId" from="existingUaList[0].partyId"/>
       <!-- Step 3: Associate SystemMessageRemote with PartySystemMessageRemote -->
-      <set field="assocTypeId" from="'SFTP_CREDENTIALS'"/>
+      <set field="assocTypeId" from="'LOOP_CREDENTIALS'"/>
       <set field="fromDate" from="ec.user.nowTimestamp"/>
       <service-call name="create#PartySystemMessageRemote"
                     in-map="[
@@ -51,9 +51,8 @@
                             fromDate:fromDate,
                             assocTypeId:assocTypeId
                           ]"/>
-
       <!-- Final Success Message -->
-      <set field="statusMessage" from="'SFTP Account successfully created and linked to the user party.'"/>
+      <set field="statusMessage" from="'LOOP Account successfully created and linked to the user party.'"/>
     </actions>
   </service>
 </services>

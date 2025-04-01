@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<moqui-conf xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+            xsi:noNamespaceSchemaLocation="http://moqui.org/xsd/moqui-conf-2.1.xsd">
+  <screen-facade>
+    <screen location="component://webroot/screen/webroot/apps.xml">
+      <subscreens-item name="netsuiteClientCreateUser" menu-title="Create New User" menu-index="95"
+                       location="component://netsuiteClient/screen/createNewUser.xml"/>
+      <subscreens-item name="netsuiteClientSFTP" menu-title="Create SFTP Connection" menu-index="96"
+                       location="component://netsuiteClient/screen/sftpConnection.xml"/>
+      <subscreens-item name="netsuiteClientLoop" menu-title="Create Loop Connection" menu-index="97"
+                       location="component://netsuiteClient/screen/loopConnection.xml"/>
+    </screen>
+  </screen-facade>
+</moqui-conf>

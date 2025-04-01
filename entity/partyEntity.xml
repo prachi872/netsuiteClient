@@ -1,0 +1,648 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+This software is in the public domain under CC0 1.0 Universal plus a
+Grant of Patent License.
+
+To the extent possible under law, the author(s) have dedicated all
+copyright and related and neighboring rights to this software to the
+public domain worldwide. This software is distributed without any
+warranty.
+
+You should have received a copy of the CC0 Public Domain Dedication
+along with this software (see the LICENSE.md file). If not, see
+<http://creativecommons.org/publicdomain/zero/1.0/>.
+-->
+<entities xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+          xsi:noNamespaceSchemaLocation="http://moqui.org/xsd/entity-definition-3.xsd">
+  <!-- ========================================================= -->
+  <!--  - netsuite.party -->
+  <!--  - netsuite.party.contact -->
+  <!--  - netsuite.party.time -->
+  <!-- ========================================================= -->
+
+
+
+  <!-- ========================================================= -->
+  <!-- netsuite.party -->
+  <!-- ========================================================= -->
+  <entity entity-name="Party" package="netsuite.party" short-alias="parties">
+    <field name="partyId" type="id" is-pk="true"/>
+    <field name="partyTypeEnumId" type="id"/>
+    <field name="disabled" type="text-indicator" enable-audit-log="true" default="'N'"/>
+    <field name="customerStatusId" type="id"/>
+    <field name="ownerPartyId" type="id" enable-audit-log="update" default="'_NA_'">
+      <description>If applicable, such as for customer records, the other Party that 'owns' the data for this Party.</description></field>
+    <field name="externalId" type="id"/>
+    <field name="dataSourceId" type="id"/>
+    <field name="comments" type="text-long"/>
+    <relationship type="one" title="PartyType" related="moqui.basic.Enumeration" short-alias="type">
+      <key-map field-name="partyTypeEnumId"/></relationship>
+    <relationship type="one" title="CustomerStatus" related="moqui.basic.StatusItem">
+      <key-map field-name="customerStatusId" related="statusId"/></relationship>
+    <relationship type="one" title="Owner" related="netsuite.party.Party" short-alias="owner">
+      <key-map field-name="ownerPartyId"/></relationship>
+    <relationship type="one" related="moqui.basic.DataSource"/>
+
+    <relationship type="one-nofk" related="netsuite.party.Organization" short-alias="organization" mutable="true"/>
+    <relationship type="one-nofk" related="netsuite.party.Person" short-alias="person" mutable="true"/>
+<!--    <relationship type="many" related="netsuite.party.PartyBadge" short-alias="badges">-->
+<!--      <key-map field-name="partyId"/></relationship>-->
+    <relationship type="many" related="netsuite.party.PartyClassificationAppl" short-alias="classifications">
+      <key-map field-name="partyId"/></relationship>
+    <relationship type="many" related="netsuite.party.PartyIdentification" short-alias="identifications">
+      <key-map field-name="partyId"/></relationship>
+    <relationship type="many" related="netsuite.party.PartyRole" short-alias="roles">
+      <key-map field-name="partyId"/></relationship>
+    <relationship type="many" title="From" related="netsuite.party.PartyRelationship" short-alias="fromRelationships">
+      <key-map field-name="partyId" related="fromPartyId"/></relationship>
+    <relationship type="many" title="To" related="netsuite.party.PartyRelationship" short-alias="toRelationships">
+      <key-map field-name="partyId" related="toPartyId"/></relationship>
+    <relationship type="many" related="netsuite.party.contact.PartyContactMech" short-alias="contactMechs">
+      <key-map field-name="partyId"/></relationship>
+
+    <relationship type="many" related="moqui.security.UserAccount" short-alias="userAccounts">
+      <key-map field-name="partyId"/></relationship>
+    <index name="PARTY_ID_EXT"><index-field name="externalId"/></index>
+    <seed-data>
+      <!-- Party Type -->
+      <moqui.basic.EnumerationType description="Party Type" enumTypeId="PartyType"/>
+      <moqui.basic.Enumeration description="Person" enumId="Person" enumTypeId="PartyType"/>
+      <moqui.basic.Enumeration description="Organization" enumId="Organization" enumTypeId="PartyType"/>
+
+      <!-- _NA_ Party -->
+      <Party partyId="_NA_" partyTypeEnumId="PtyPerson"/>
+      <Person partyId="_NA_" firstName="Not" lastName="Applicable"/>
+    </seed-data>
+
+    <master name="default">
+      <detail relationship="type"/>
+      <detail relationship="organization"/>
+      <detail relationship="person"/>
+      <!-- TODO: do something with UserAccount, exclude certain fields like PW/etc? -->
+      <detail relationship="classifications">
+        <detail relationship="classification"><detail relationship="type"/></detail>
+      </detail>
+      <detail relationship="identifications"><detail relationship="type"/></detail>
+      <detail relationship="notes"/>
+      <detail relationship="roles"><detail relationship="role"/></detail>
+      <detail relationship="fromRelationships">
+        <detail relationship="fromRole"/>
+        <detail relationship="toParty">
+          <detail relationship="organization"/>
+          <detail relationship="person"/>
+        </detail>
+        <detail relationship="toRole"/>
+        <detail relationship="status"/>
+        <detail relationship="type"/>
+      </detail>
+      <detail relationship="toRelationships">
+        <detail relationship="fromParty">
+          <detail relationship="organization"/>
+          <detail relationship="person"/>
+        </detail>
+        <detail relationship="fromRole"/>
+        <detail relationship="toRole"/>
+        <detail relationship="status"/>
+        <detail relationship="type"/>
+      </detail>
+      <detail relationship="contactMechs">
+        <detail relationship="contactMech" use-master="default"/>
+        <detail relationship="purpose"/>
+      </detail>
+    </master>
+    <master name="contact">
+      <detail relationship="type"/>
+      <detail relationship="organization"/>
+      <detail relationship="person"/>
+      <detail relationship="identifications"><detail relationship="type"/></detail>
+      <detail relationship="contactMechs">
+        <detail relationship="contactMech" use-master="default"/>
+        <detail relationship="purpose"/>
+      </detail>
+    </master>
+    <master name="basic">
+      <detail relationship="organization"/>
+      <detail relationship="person"/>
+      <detail relationship="identifications"><detail relationship="type"/></detail>
+    </master>
+  </entity>
+
+  <entity entity-name="Organization" package="netsuite.party">
+    <field name="partyId" type="id" is-pk="true"/>
+    <field name="organizationName" type="text-medium"/>
+    <field name="officeSiteName" type="text-medium"/>
+    <field name="annualRevenue" type="currency-amount"/>
+    <field name="numEmployees" type="number-integer"/>
+    <relationship type="one" related="netsuite.party.Party"/>
+    <index name="PTY_ORG_NAME_IDX"><index-field name="organizationName"/></index>
+  </entity>
+  <entity entity-name="Person" package="netsuite.party">
+    <field name="partyId" type="id" is-pk="true"/>
+    <field name="salutation" type="text-medium"/>
+    <field name="firstName" type="text-medium"/>
+    <field name="middleName" type="text-medium"/>
+    <field name="lastName" type="text-medium" enable-audit-log="update"/>
+    <field name="personalTitle" type="text-medium"/>
+    <field name="suffix" type="text-medium"/>
+    <field name="nickname" type="text-medium"/>
+    <field name="gender" type="text-indicator"/>
+    <field name="birthDate" type="date"/>
+    <field name="deceasedDate" type="date"/>
+    <field name="height" type="number-float"/>
+    <field name="weight" type="number-float"/>
+    <field name="mothersMaidenName" type="text-medium" encrypt="true"/>
+    <field name="maritalStatusEnumId" type="id"/>
+    <field name="employmentStatusEnumId" type="id"/>
+    <field name="residenceStatusEnumId" type="id"/>
+    <field name="occupation" type="text-medium"/>
+    <relationship type="one" related="netsuite.party.Party"/>
+    <relationship type="one" title="MaritalStatus" related="moqui.basic.Enumeration">
+      <key-map field-name="maritalStatusEnumId"/></relationship>
+    <relationship type="one" title="EmploymentStatus" related="moqui.basic.Enumeration">
+      <key-map field-name="employmentStatusEnumId"/></relationship>
+    <relationship type="one" title="ResidenceStatus" related="moqui.basic.Enumeration">
+      <key-map field-name="residenceStatusEnumId"/></relationship>
+    <index name="FIRST_NAME_IDX"><index-field name="firstName"/></index>
+    <index name="LAST_NAME_IDX"><index-field name="lastName"/></index>
+    <seed-data>
+      <moqui.basic.EnumerationType description="Marital Status" enumTypeId="MaritalStatus"/>
+      <moqui.basic.Enumeration description="Single" enumId="MarsSingle" enumTypeId="MaritalStatus"/>
+
+      <moqui.basic.EnumerationType description="Employment Status" enumTypeId="EmploymentStatus"/>
+      <moqui.basic.Enumeration description="Full-time Employed" enumId="EmpsFullTime" enumTypeId="EmploymentStatus"/>
+      <moqui.basic.Enumeration description="Part-time Employed" enumId="EmpsPartTime" enumTypeId="EmploymentStatus"/>
+      <moqui.basic.Enumeration description="Self Employed" enumId="EmpsSelf" enumTypeId="EmploymentStatus"/>
+      <moqui.basic.Enumeration description="House-Person" enumId="EmpsHouse" enumTypeId="EmploymentStatus"/>
+      <moqui.basic.Enumeration description="Retired" enumId="EmpsRetired" enumTypeId="EmploymentStatus"/>
+      <moqui.basic.Enumeration description="Student" enumId="EmpsStudent" enumTypeId="EmploymentStatus"/>
+      <moqui.basic.Enumeration description="Unemployed" enumId="EmpsUnemployed" enumTypeId="EmploymentStatus"/>
+
+      <moqui.basic.EnumerationType description="Residence Status" enumTypeId="ResidenceStatus"/>
+      <moqui.basic.Enumeration description="Own Home" enumId="RessOwn" enumTypeId="ResidenceStatus"/>
+      <moqui.basic.Enumeration description="Private Tenant" enumId="RessPrivateTenant" enumTypeId="ResidenceStatus"/>
+      <moqui.basic.Enumeration description="Public Tenant" enumId="RessPublicTenant" enumTypeId="ResidenceStatus"/>
+      <moqui.basic.Enumeration description="With Parents" enumId="RessParents" enumTypeId="ResidenceStatus"/>
+    </seed-data>
+  </entity>
+
+  <extend-entity entity-name="UserAccount" package="moqui.security">
+    <field name="partyId" type="id"/>
+    <relationship type="one" related="netsuite.party.Party"/>
+  </extend-entity>
+
+  <entity entity-name="PartyClassification" package="netsuite.party" cache="true">
+    <field name="partyClassificationId" type="id" is-pk="true"/>
+    <field name="classificationTypeEnumId" type="id"/>
+    <field name="parentClassificationId" type="id"/>
+    <field name="description" type="text-medium"/>
+    <field name="standardCode" type="text-medium"/>
+    <relationship type="one" title="PartyClassificationType" related="moqui.basic.Enumeration" short-alias="type">
+      <key-map field-name="classificationTypeEnumId"/></relationship>
+    <relationship type="one" title="Parent" related="netsuite.party.PartyClassification">
+      <key-map field-name="parentClassificationId" related="partyClassificationId"/></relationship>
+    <seed-data>
+      <moqui.basic.EnumerationType description="Party Classification Type" enumTypeId="PartyClassificationType"/>
+      <moqui.basic.Enumeration description="Customer" enumId="PcltCustomer" enumTypeId="PartyClassificationType"/>
+      <moqui.basic.Enumeration description="Minority" enumId="PcltMinority" enumTypeId="PartyClassificationType"/>
+      <moqui.basic.Enumeration description="Income" enumId="PcltIncome" enumTypeId="PartyClassificationType"/>
+      <moqui.basic.Enumeration description="Industry" enumId="PcltIndustry" enumTypeId="PartyClassificationType"/>
+      <moqui.basic.Enumeration description="Revenue" enumId="PcltRevenue" enumTypeId="PartyClassificationType"/>
+      <moqui.basic.Enumeration description="Number of Employees" enumId="PcltNumberEmployees" enumTypeId="PartyClassificationType"/>
+      <moqui.basic.Enumeration description="Ownership" enumId="PcltOwnership" enumTypeId="PartyClassificationType"/>
+    </seed-data>
+  </entity>
+  <entity entity-name="PartyClassificationAppl" package="netsuite.party">
+    <field name="partyId" type="id" is-pk="true"/>
+    <field name="partyClassificationId" type="id" is-pk="true"/>
+    <field name="fromDate" type="date-time" is-pk="true"/>
+    <field name="thruDate" type="date-time"/>
+    <relationship type="one" related="netsuite.party.Party" short-alias="party"/>
+    <relationship type="one" related="netsuite.party.PartyClassification" short-alias="classification"/>
+  </entity>
+
+  <entity entity-name="PartyGeoPoint" package="netsuite.party">
+    <field name="partyId" type="id" is-pk="true"/>
+    <field name="geoPointId" type="id" is-pk="true"/>
+    <field name="fromDate" type="date-time" is-pk="true"/>
+    <field name="thruDate" type="date-time"/>
+    <relationship type="one" related="netsuite.party.Party"/>
+    <relationship type="one" related="moqui.basic.GeoPoint"/>
+  </entity>
+  <entity entity-name="PartyIdentification" package="netsuite.party">
+    <!-- FUTURE? support multiple/history of IDs; single sequenced PK; update lookup/etc services -->
+    <field name="partyId" type="id" is-pk="true"/>
+    <field name="partyIdTypeEnumId" type="id" is-pk="true"/>
+    <field name="idValue" type="text-medium" encrypt="true"/>
+    <field name="issuedBy" type="text-medium"/>
+    <field name="issuedByPartyId" type="id"/>
+    <field name="expireDate" type="date"/>
+    <relationship type="one" title="PartyIdType" related="moqui.basic.Enumeration" short-alias="type">
+      <key-map field-name="partyIdTypeEnumId"/></relationship>
+    <relationship type="one" related="netsuite.party.Party"/>
+    <relationship type="one" title="IssuedBy" related="netsuite.party.Party">
+      <key-map field-name="issuedByPartyId"/></relationship>
+    <index name="PARTY_ID_VALUE"><index-field name="idValue"/></index>
+    <seed-data>
+      <moqui.basic.EnumerationType description="Party Identification Type" enumTypeId="PartyIdType"/>
+      <moqui.basic.Enumeration description="Netsuite Customer Id" enumTypeId="NetsuiteCustomerId"/>
+    </seed-data>
+  </entity>
+  <entity entity-name="PartyNote" package="netsuite.party">
+    <field name="partyId" type="id" is-pk="true"/>
+    <field name="noteDate" type="date-time" is-pk="true" default="ec.user.nowTimestamp"/>
+    <field name="noteText" type="text-long" enable-audit-log="true"/>
+    <field name="internalNote" type="text-indicator"/>
+    <field name="userId" type="id" default="ec.user.userId"/>
+    <relationship type="one" related="netsuite.party.Party"/>
+    <relationship type="one" related="moqui.security.UserAccount"/>
+  </entity>
+  <entity entity-name="PartyRelationship" package="netsuite.party">
+    <field name="partyRelationshipId" type="id" is-pk="true"/>
+    <field name="relationshipTypeEnumId" type="id"/>
+    <field name="fromPartyId" type="id"/>
+    <field name="fromRoleTypeId" type="id"/>
+    <field name="toPartyId" type="id"/>
+    <field name="toRoleTypeId" type="id"/>
+    <field name="fromDate" type="date-time"/>
+    <field name="thruDate" type="date-time"/>
+    <field name="statusId" type="id" enable-audit-log="true"/>
+    <field name="comments" type="text-medium"/>
+    <field name="relationshipName" type="text-medium">
+      <description>Official name of relationship, such as title in an organization.</description>
+    </field>
+    <relationship type="one" title="PartyRelationshipType" related="moqui.basic.Enumeration" short-alias="type">
+      <key-map field-name="relationshipTypeEnumId"/></relationship>
+    <relationship type="one" title="From" related="netsuite.party.Party" short-alias="fromParty">
+      <key-map field-name="fromPartyId"/></relationship>
+    <relationship type="one" title="From" related="netsuite.party.RoleType" short-alias="fromRole">
+      <key-map field-name="fromRoleTypeId"/></relationship>
+    <relationship type="one" title="To" related="netsuite.party.Party" short-alias="toParty">
+      <key-map field-name="toPartyId"/></relationship>
+    <relationship type="one" title="To" related="netsuite.party.RoleType" short-alias="toRole">
+      <key-map field-name="toRoleTypeId"/></relationship>
+    <relationship type="one" title="PartyRelationship" related="moqui.basic.StatusItem" short-alias="status"/>
+    <seed-data>
+
+      <!-- NOTE: The partyRelationshipTypeEnumId describes the FROM Party, ie Joe is a customer of ACME, so Joe
+          is the fromPartyId (fromRoleTypeId=Customer) and ACME is the toPartyId (toRoleTypeId=OrgInternal); for
+          other examples see Table 2.5 in "The Data Model Resource Book, Revised Edition, Volume 1"-->
+
+      <moqui.basic.EnumerationType description="Party Relationship Type" enumTypeId="PartyRelationshipType"/>
+      <moqui.basic.Enumeration description="Contact" enumId="PrtContact" enumTypeId="PartyRelationshipType"/>
+      <moqui.basic.Enumeration description="Customer" enumId="PrtCustomer" enumTypeId="PartyRelationshipType"/>
+      <moqui.basic.Enumeration description="Employee" enumId="PrtEmployee" enumTypeId="PartyRelationshipType"/>
+      <moqui.basic.Enumeration description="Manager" enumId="PrtManager" enumTypeId="PartyRelationshipType"/>
+      <moqui.basic.Enumeration description="Organization Member" enumId="PrtMember" enumTypeId="PartyRelationshipType"/>
+      <moqui.basic.Enumeration description="Partner" enumId="PrtPartner" enumTypeId="PartyRelationshipType"/>
+      <moqui.basic.Enumeration description="Representative" enumId="PrtRepresentative" enumTypeId="PartyRelationshipType"/>
+      <moqui.basic.Enumeration description="Sales Affiliate" enumId="PrtSalesAffiliate" enumTypeId="PartyRelationshipType"/>
+
+      <moqui.basic.StatusType description="Party Relationship" statusTypeId="PartyRelationship"/>
+    </seed-data>
+  </entity>
+
+  <entity entity-name="PartyRole" package="netsuite.party">
+    <field name="partyId" type="id" is-pk="true"/>
+    <field name="roleTypeId" type="id" is-pk="true"/>
+    <relationship type="one" related="netsuite.party.Party" short-alias="party"/>
+    <relationship type="one" related="netsuite.party.RoleType" short-alias="role"/>
+
+  </entity>
+  <entity entity-name="RoleType" package="netsuite.party" cache="true">
+    <!-- NOTE: RoleType is not moved to Enumeration because there are many of them (ID conflicts) and it is referred to in many places. -->
+    <field name="roleTypeId" type="id" is-pk="true"/>
+    <field name="parentTypeId" type="id"/>
+    <field name="description" type="text-medium"/>
+    <relationship type="one" title="Parent" related="netsuite.party.RoleType">
+      <key-map field-name="parentTypeId" related="roleTypeId"/></relationship>
+    <seed-data>
+      <!-- Role to use when a role is not really applicable for the party association with a record. -->
+      <netsuite.party.RoleType description="Not Applicable" roleTypeId="_NA_"/>
+
+      <!-- General Roles -->
+      <netsuite.party.RoleType description="Agent" roleTypeId="Agent"/>
+      <netsuite.party.RoleType description="Carrier" roleTypeId="Carrier"/>
+      <netsuite.party.RoleType description="Contractor" roleTypeId="Contractor"/>
+      <netsuite.party.RoleType description="Distributor" roleTypeId="Distributor"/>
+      <netsuite.party.RoleType description="Owner"  roleTypeId="Owner"/>
+      <netsuite.party.RoleType description="Partner" roleTypeId="Partner"/>
+      <netsuite.party.RoleType description="Subscriber" roleTypeId="Subscriber"/>
+      <netsuite.party.RoleType description="Supplier" roleTypeId="Supplier"/>
+
+      <!-- Person Roles -->
+      <netsuite.party.RoleType description="Accountant" roleTypeId="Accountant"/>
+      <netsuite.party.RoleType description="Administrator" roleTypeId="Administrator"/>
+      <netsuite.party.RoleType description="Assignee" roleTypeId="Assignee"/>
+      <netsuite.party.RoleType description="Buyer" roleTypeId="Buyer"/>
+      <netsuite.party.RoleType description="Employee" roleTypeId="Employee"/>
+      <netsuite.party.RoleType description="Executive" roleTypeId="Executive"/>
+      <netsuite.party.RoleType description="Manager" roleTypeId="Manager"/>
+      <netsuite.party.RoleType description="Operator" roleTypeId="Operator"/>
+      <netsuite.party.RoleType description="Production Manager" roleTypeId="ProductionManager"/>
+      <netsuite.party.RoleType description="Production Worker" roleTypeId="ProductionWorker"/>
+      <netsuite.party.RoleType description="Receiver" roleTypeId="Receiver"/>
+      <netsuite.party.RoleType description="Sales Contact" roleTypeId="Contact"/>
+      <netsuite.party.RoleType description="Shipment Clerk" roleTypeId="ShipmentClerk"/>
+      <netsuite.party.RoleType description="Supplier Agent" roleTypeId="SupplierAgent"/>
+      <netsuite.party.RoleType description="Technical Contact" roleTypeId="TechContact"/>
+
+
+      <moqui.basic.Enumeration description="Person Roles" enumId="RgpPerson" enumTypeId="RoleGroup"/>
+      <netsuite.party.RoleGroupMember roleGroupEnumId="RgpPerson" roleTypeId="Accountant"/>
+
+      <!-- Organization Roles -->
+      <netsuite.party.RoleType description="Association" roleTypeId="OrgAssociation"/>
+      <netsuite.party.RoleType description="Corporation" roleTypeId="OrgCorporation"/>
+      <netsuite.party.RoleType description="Department" roleTypeId="OrgDepartment"/>
+      <netsuite.party.RoleType description="Division" roleTypeId="OrgDivision"/>
+      <netsuite.party.RoleType description="Employer" roleTypeId="OrgEmployer"/>
+      <netsuite.party.RoleType description="Internal Organization" roleTypeId="OrgInternal"/>
+      <netsuite.party.RoleType description="Team" roleTypeId="OrgTeam"/>
+      <netsuite.party.RoleType description="Unit" roleTypeId="OrgUnit"/>
+      <netsuite.party.RoleType description="Parent" roleTypeId="OrgParent"/>
+      <netsuite.party.RoleType description="Regulatory Agency" roleTypeId="OrgRegulatoryAgency"/>
+      <netsuite.party.RoleType description="Subsidiary" roleTypeId="OrgSubsidiary"/>
+      <netsuite.party.RoleType description="Tax Authority" roleTypeId="OrgTaxAuthority"/>
+      <netsuite.party.RoleType description="Union" roleTypeId="OrgUnion"/>
+
+      <moqui.basic.Enumeration description="Organization Roles" enumId="RgpOrganization" enumTypeId="RoleGroup"/>
+      <netsuite.party.RoleGroupMember roleGroupEnumId="RgpOrganization" roleTypeId="OrgAssociation"/>
+      <netsuite.party.RoleGroupMember roleGroupEnumId="RgpOrganization" roleTypeId="OrgCorporation"/>
+      <netsuite.party.RoleGroupMember roleGroupEnumId="RgpOrganization" roleTypeId="OrgDepartment"/>
+      <netsuite.party.RoleGroupMember roleGroupEnumId="RgpOrganization" roleTypeId="OrgDivision"/>
+      <netsuite.party.RoleGroupMember roleGroupEnumId="RgpOrganization" roleTypeId="OrgFamily"/>
+
+      <!-- Customer and Vendor Roles -->
+      <!-- NOTE: these don't use RoleGroupMember because they are an actual hierarchy of roles (Customer and Vendor are valid roles with sub-roles) -->
+      <netsuite.party.RoleType description="Customer" roleTypeId="Customer"/>
+      <netsuite.party.RoleType description="Customer - End User" parentTypeId="Customer" roleTypeId="CustomerEndUser"/>
+    </seed-data>
+  </entity>
+
+  <entity entity-name="PartySystemMessage" package="netsuite.party" cache="never">
+    <field name="partyId" type="id" is-pk="true"/>
+    <field name="systemMessageId" type="id" is-pk="true"/>
+    <field name="partyIdTypeEnumId" type="id"/>
+    <relationship type="one" related="netsuite.party.Party" short-alias="party"/>
+    <relationship type="one" related="moqui.service.message.SystemMessage" short-alias="systemMessage"/>
+    <relationship type="one" title="PartyIdType" related="moqui.basic.Enumeration" short-alias="partyIdTypeEnum">
+      <key-map field-name="partyIdTypeEnumId"/></relationship>
+  </entity> `
+  <entity entity-name="PartySystemMessageRemote" package="netsuite.party" cache="never">
+    <field name="partyId" type="id" is-pk="true"/>
+    <field name="systemMessageRemoteId" type="id" is-pk="true"/>
+    <field name="fromDate" type="date-time"/>
+    <field name="thruDate" type="date-time"/>
+    <field name="assocTypeId" type="id"/>
+    <relationship type="one" related="netsuite.party.Party" short-alias="party"/>
+  </entity>
+  <!-- ========================================================= -->
+  <!-- netsuite.party.contact -->
+  <!-- ========================================================= -->
+
+  <entity entity-name="ContactMech" package="netsuite.party.contact" short-alias="contactMechs" use="nontransactional" cache="never">
+    <field name="contactMechId" type="id" is-pk="true"/>
+    <field name="contactMechTypeEnumId" type="id"/>
+    <field name="dataSourceId" type="id"/>
+    <field name="infoString" type="text-medium"/>
+    <field name="gatewayCimId" type="text-short" enable-audit-log="update"/>
+    <field name="trustLevelEnumId" type="id"/>
+    <field name="validateMessage" type="text-medium"/>
+    <field name="paymentFraudEvidenceId" type="id"><description>Refer to evidence here if trustLevelEnumId is gray listed or black listed</description></field>
+    <field name="replacesContactMechId" type="id"><description>For update by copy-on-write this is the ID of the ContactMech it replaces</description></field>
+    <relationship type="one" title="ContactMechType" related="moqui.basic.Enumeration" short-alias="type">
+      <key-map field-name="contactMechTypeEnumId"/></relationship>
+    <relationship type="one" related="moqui.basic.DataSource"/>
+    <relationship type="one" title="ContactPaymentTrustLevel" related="moqui.basic.Enumeration" short-alias="trustLevel">
+      <key-map field-name="trustLevelEnumId"/></relationship>
+    <relationship type="one-nofk" title="Replaces" related="netsuite.party.contact.ContactMech" short-alias="replacesContactMech">
+      <key-map field-name="replacesContactMechId"/></relationship>
+    <relationship type="one-nofk" related="netsuite.party.contact.TelecomNumber" short-alias="tele\comNumber" mutable="true"/>
+    <relationship type="one-nofk" related="netsuite.party.contact.PostalAddress" short-alias="postalAddress" mutable="true"/>
+    <relationship type="many" related="netsuite.party.contact.PartyContactMech" short-alias="parties">
+      <key-map field-name="contactMechId"/></relationship>
+
+    <index name="CMECH_INFO_STRING"><index-field name="infoString"/></index>
+    <index name="CMECH_REPL_CMECH"><index-field name="replacesContactMechId"/></index>
+    <seed-data>
+      <!-- NOTE: ContactMechType Enumerations defined above in CommunicationEventType entity -->
+
+      <!-- Contact/Payment Trust Level -->
+      <moqui.basic.EnumerationType description="Contact/Payment Trust Level" enumTypeId="ContactPaymentTrustLevel"/>
+      <moqui.basic.Enumeration enumId="CmtlNew" description="New Data" sequenceNum="1" enumTypeId="ContactPaymentTrustLevel"/>
+      <moqui.basic.Enumeration enumId="CmtlValid" description="Valid/Complete" sequenceNum="2" enumTypeId="ContactPaymentTrustLevel"/>
+      <moqui.basic.Enumeration enumId="CmtlVerified" description="Verified" sequenceNum="3" enumTypeId="ContactPaymentTrustLevel"/><!-- (with outbound contact or authorization) -->
+      <moqui.basic.Enumeration enumId="CmtlInvalid" description="Invalid" sequenceNum="6" enumTypeId="ContactPaymentTrustLevel"/>
+      <moqui.basic.Enumeration enumId="CmtlIncomplete" description="Incomplete" sequenceNum="7" enumTypeId="ContactPaymentTrustLevel"/>
+      <moqui.basic.Enumeration enumId="CmtlGreylisted" description="Greylisted" sequenceNum="8" enumTypeId="ContactPaymentTrustLevel"/>
+      <moqui.basic.Enumeration enumId="CmtlBlacklisted" description="Blacklisted" sequenceNum="9" enumTypeId="ContactPaymentTrustLevel"/>
+    </seed-data>
+
+    <master>
+      <detail relationship="telecomNumber"/>
+      <detail relationship="postalAddress">
+        <detail relationship="cityGeo"/>
+        <detail relationship="countyGeo"/>
+        <detail relationship="stateProvinceGeo"/>
+        <detail relationship="postalCodeGeo"/>
+        <detail relationship="countryGeo"/>
+        <detail relationship="telecomContactMech" use-master="default"/>
+        <detail relationship="emailContactMech"/>
+      </detail>
+    </master>
+  </entity>
+  <entity entity-name="ContactMechPurpose" package="netsuite.party.contact" use="configuration" cache="true">
+    <field name="contactMechPurposeId" type="id" is-pk="true"/>
+    <field name="contactMechTypeEnumId" type="id"/>
+    <field name="description" type="text-medium"/>
+    <relationship type="one" title="ContactMechType" related="moqui.basic.Enumeration">
+      <key-map field-name="contactMechTypeEnumId"/></relationship>
+    <seed-data>
+      <ContactMechPurpose contactMechPurposeId="PostalPrimary" contactMechTypeEnumId="CmtPostalAddress"
+                          description="Postal - Primary"/>
+      <ContactMechPurpose contactMechPurposeId="PostalShippingDest" contactMechTypeEnumId="CmtPostalAddress"
+                          description="Postal - Shipping Destination"/>
+      <ContactMechPurpose contactMechPurposeId="PostalShippingOrigin" contactMechTypeEnumId="CmtPostalAddress"
+                          description="Postal - Shipping Origin"/>
+      <ContactMechPurpose contactMechPurposeId="PostalBilling" contactMechTypeEnumId="CmtPostalAddress"
+                          description="Postal - Billing (AP)"/>
+      <ContactMechPurpose contactMechPurposeId="PostalPayment" contactMechTypeEnumId="CmtPostalAddress"
+                          description="Postal - Payment (AR)"/>
+      <ContactMechPurpose contactMechPurposeId="PostalTax" contactMechTypeEnumId="CmtPostalAddress"
+                          description="Postal - Tax"/>
+      <ContactMechPurpose contactMechPurposeId="PostalGeneral" contactMechTypeEnumId="CmtPostalAddress"
+                          description="Postal - General Correspondence"/>
+      <ContactMechPurpose contactMechPurposeId="PostalPurchReturn" contactMechTypeEnumId="CmtPostalAddress"
+                          description="Postal - Purchase Return"/>
+      <ContactMechPurpose contactMechPurposeId="PostalPrevious" contactMechTypeEnumId="CmtPostalAddress"
+                          description="Postal - Previous"/>
+      <ContactMechPurpose contactMechPurposeId="PostalHome" contactMechTypeEnumId="CmtPostalAddress"
+                          description="Postal - Home"/>
+      <ContactMechPurpose contactMechPurposeId="PostalWork" contactMechTypeEnumId="CmtPostalAddress"
+                          description="Postal - Work"/>
+      <ContactMechPurpose contactMechPurposeId="PostalRetailStore" contactMechTypeEnumId="CmtPostalAddress"
+                          description="Postal - Retail Store"/>
+
+      <ContactMechPurpose contactMechPurposeId="PhonePrimary" contactMechTypeEnumId="CmtTelecomNumber"
+                          description="Phone - Primary"/>
+      <ContactMechPurpose contactMechPurposeId="PhoneShippingDest" contactMechTypeEnumId="CmtTelecomNumber"
+                          description="Phone - Shipping Destination"/>
+      <ContactMechPurpose contactMechPurposeId="PhoneShippingOrigin" contactMechTypeEnumId="CmtTelecomNumber"
+                          description="Phone - Shipping Origin"/>
+      <ContactMechPurpose contactMechPurposeId="PhoneShippingFax" contactMechTypeEnumId="CmtTelecomNumber"
+                          description="Phone - Shipping Fax"/>
+      <ContactMechPurpose contactMechPurposeId="PhoneBilling" contactMechTypeEnumId="CmtTelecomNumber"
+                          description="Phone - Billing (AP)"/>
+      <ContactMechPurpose contactMechPurposeId="PhoneBillingFax" contactMechTypeEnumId="CmtTelecomNumber"
+                          description="Phone - Billing Fax (AP)"/>
+      <ContactMechPurpose contactMechPurposeId="PhonePayment" contactMechTypeEnumId="CmtTelecomNumber"
+                          description="Phone - Payment (AR)"/>
+      <ContactMechPurpose contactMechPurposeId="PhonePaymentFax" contactMechTypeEnumId="CmtTelecomNumber"
+                          description="Phone - Payment Fax (AR)"/>
+      <ContactMechPurpose contactMechPurposeId="PhoneTax" contactMechTypeEnumId="CmtTelecomNumber"
+                          description="Phone - Tax"/>
+      <ContactMechPurpose contactMechPurposeId="PhoneDid" contactMechTypeEnumId="CmtTelecomNumber"
+                          description="Phone - Direct Inward Dialing"/>
+      <ContactMechPurpose contactMechPurposeId="PhoneHome" contactMechTypeEnumId="CmtTelecomNumber"
+                          description="Phone - Home"/>
+      <ContactMechPurpose contactMechPurposeId="PhoneWork" contactMechTypeEnumId="CmtTelecomNumber"
+                          description="Phone - Work"/>
+      <ContactMechPurpose contactMechPurposeId="PhoneFax" contactMechTypeEnumId="CmtTelecomNumber"
+                          description="Phone - Fax"/>
+      <ContactMechPurpose contactMechPurposeId="PhoneMobile" contactMechTypeEnumId="CmtTelecomNumber"
+                          description="Phone - Mobile"/>
+      <ContactMechPurpose contactMechPurposeId="PhoneAssistant" contactMechTypeEnumId="CmtTelecomNumber"
+                          description="Phone - Assistant"/>
+      <ContactMechPurpose contactMechPurposeId="PhoneQuick" contactMechTypeEnumId="CmtTelecomNumber"
+                          description="Phone - Quick Calls"/>
+      <ContactMechPurpose contactMechPurposeId="PhoneRetailStore" contactMechTypeEnumId="CmtTelecomNumber"
+                          description="Phone - Retail Store"/>
+
+      <ContactMechPurpose contactMechPurposeId="EmailPrimary" contactMechTypeEnumId="CmtEmailAddress"
+                          description="Email - Primary Address"/>
+      <ContactMechPurpose contactMechPurposeId="EmailShippingDest" contactMechTypeEnumId="CmtEmailAddress"
+                          description="Email - Shipping Destination"/>
+      <ContactMechPurpose contactMechPurposeId="EmailShippingOrigin" contactMechTypeEnumId="CmtEmailAddress"
+                          description="Email - Shipping Origin"/>
+      <ContactMechPurpose contactMechPurposeId="EmailBilling" contactMechTypeEnumId="CmtEmailAddress"
+                          description="Email - Billing (AP)"/>
+      <ContactMechPurpose contactMechPurposeId="EmailPayment" contactMechTypeEnumId="CmtEmailAddress"
+                          description="Email - Payment (AR)"/>
+      <ContactMechPurpose contactMechPurposeId="EmailOther" contactMechTypeEnumId="CmtEmailAddress"
+                          description="Email - Other"/>
+      <ContactMechPurpose contactMechPurposeId="EmailSupport" contactMechTypeEnumId="CmtEmailAddress"
+                          description="Email - Support"/>
+      <ContactMechPurpose contactMechPurposeId="EmailOrder" contactMechTypeEnumId="CmtEmailAddress"
+                          description="Email - Order Notification"/>
+      <ContactMechPurpose contactMechPurposeId="EmailMarketing" contactMechTypeEnumId="CmtEmailAddress"
+                          description="Email - Marketing"/>
+      <ContactMechPurpose contactMechPurposeId="EmailRetailStore" contactMechTypeEnumId="CmtEmailAddress"
+                          description="Email - Retail Store"/>
+
+      <ContactMechPurpose contactMechPurposeId="WebUrlPrimary" contactMechTypeEnumId="CmtWebAddress"
+                          description="Website URL - Primary"/>
+      <ContactMechPurpose contactMechPurposeId="WebUrlPayment" contactMechTypeEnumId="CmtWebAddress"
+                          description="Website URL - Payment (AR)"/>
+      <ContactMechPurpose contactMechPurposeId="WebRetailStore" contactMechTypeEnumId="CmtWebAddress"
+                          description="Website URL - Retail Store"/>
+      <ContactMechPurpose contactMechPurposeId="WebUrlICal" contactMechTypeEnumId="CmtWebAddress"
+                          description="Website URL - iCal"/>
+
+      <ContactMechPurpose contactMechPurposeId="WebUrlFacebook" contactMechTypeEnumId="CmtWebAddress"
+                          description="Website URL - Facebook"/>
+      <ContactMechPurpose contactMechPurposeId="WebUrlInstagram" contactMechTypeEnumId="CmtWebAddress"
+                          description="Website URL - Instagram"/>
+      <ContactMechPurpose contactMechPurposeId="WebUrlLinkedIn" contactMechTypeEnumId="CmtWebAddress"
+                          description="Website URL - LinkedIn"/>
+      <ContactMechPurpose contactMechPurposeId="WebUrlSnapchat" contactMechTypeEnumId="CmtWebAddress"
+                          description="Website URL - Snapchat"/>
+      <ContactMechPurpose contactMechPurposeId="WebUrlTikTok" contactMechTypeEnumId="CmtWebAddress"
+                          description="Website URL - TikTok"/>
+      <ContactMechPurpose contactMechPurposeId="WebUrlTwitter" contactMechTypeEnumId="CmtWebAddress"
+                          description="Website URL - Twitter"/>
+
+
+
+      <!-- General 'Other' purpose, mainly needed because PartyContactMech.contactMechPurposeId is a PK field, needs a non-null value -->
+      <ContactMechPurpose contactMechPurposeId="Other" contactMechTypeEnumId="" description="Other"/>
+
+      <ContactMechPurpose contactMechPurposeId="IpAddressClient" contactMechTypeEnumId="CmtIpAddress"
+                          description="IP Address - Client"/>
+    </seed-data>
+  </entity>
+  <entity entity-name="PartyContactMech" package="netsuite.party.contact" use="nontransactional" cache="never">
+    <field name="partyId" type="id" is-pk="true"/>
+    <field name="contactMechId" type="id" is-pk="true"/>
+    <field name="contactMechPurposeId" type="id" is-pk="true"/>
+    <field name="fromDate" type="date-time" is-pk="true"/>
+    <field name="thruDate" type="date-time"/>
+    <field name="extension" type="text-short"/>
+    <field name="comments" type="text-medium"/>
+    <field name="allowSolicitation" type="text-indicator"/>
+    <field name="usedSince" type="date"/>
+    <field name="usedUntil" type="date"/>
+    <field name="verifyCode" type="text-medium" enable-audit-log="true"/>
+    <field name="verifyCodeDate" type="date-time"/>
+    <field name="verifyCodeAttempts" type="number-integer"/>
+    <relationship type="one" related="netsuite.party.Party"/>
+    <relationship type="one" related="netsuite.party.contact.ContactMech" short-alias="contactMech" mutable="true"/>
+    <relationship type="one" related="netsuite.party.contact.ContactMechPurpose" short-alias="purpose"/>
+    <relationship type="one-nofk" related="netsuite.party.contact.PostalAddress" short-alias="postalAddress" mutable="true"/>
+    <relationship type="one-nofk" related="netsuite.party.contact.TelecomNumber" short-alias="telecomNumber" mutable="true"/>
+  </entity>
+  <entity entity-name="PostalAddress" package="netsuite.party.contact" use="nontransactional" cache="never">
+    <field name="contactMechId" type="id" is-pk="true"/>
+    <field name="toName" type="text-medium"/>
+    <field name="attnName" type="text-medium"/>
+    <field name="address1" type="text-medium"/>
+    <field name="address2" type="text-medium"/>
+    <field name="unitNumber" type="text-medium"/>
+    <field name="directions" type="text-long"/>
+    <field name="city" type="text-medium"/>
+    <field name="cityGeoId" type="id"/>
+    <field name="schoolDistrictGeoId" type="id"/>
+    <field name="countyGeoId" type="id"/>
+    <field name="stateProvinceGeoId" type="id"/>
+    <field name="countryGeoId" type="id"/>
+    <field name="postalCode" type="text-short"/>
+    <field name="postalCodeExt" type="text-short"/>
+    <field name="postalCodeGeoId" type="id"/>
+    <field name="geoPointId" type="id"/>
+    <field name="commercial" type="text-indicator"/>
+    <field name="accessCode" type="text-short"/>
+    <field name="telecomContactMechId" type="id"/>
+    <field name="emailContactMechId" type="id"/>
+    <field name="shipGatewayAddressId" type="text-medium"/>
+    <relationship type="one" related="netsuite.party.contact.ContactMech"/>
+    <relationship type="one" title="City" related="moqui.basic.Geo" short-alias="cityGeo">
+      <key-map field-name="cityGeoId"/></relationship>
+    <relationship type="one" title="SchoolDistrict" related="moqui.basic.Geo">
+      <key-map field-name="schoolDistrictGeoId"/></relationship>
+    <relationship type="one" title="County" related="moqui.basic.Geo" short-alias="countyGeo">
+      <key-map field-name="countyGeoId"/></relationship>
+    <relationship type="one" title="StateProvince" related="moqui.basic.Geo" short-alias="stateProvinceGeo">
+      <key-map field-name="stateProvinceGeoId"/></relationship>
+    <relationship type="one" title="Country" related="moqui.basic.Geo" short-alias="countryGeo">
+      <key-map field-name="countryGeoId"/></relationship>
+    <relationship type="one" title="PostalCode" related="moqui.basic.Geo" short-alias="postalCodeGeo">
+      <key-map field-name="postalCodeGeoId"/></relationship>
+    <relationship type="one" related="GeoPoint" short-alias="geoPoint"/>
+    <relationship type="one-nofk" title="Telecom" related="netsuite.party.contact.ContactMech" short-alias="telecomContactMech" mutable="true">
+      <key-map field-name="telecomContactMechId"/></relationship>
+    <relationship type="one" title="Telecom" related="netsuite.party.contact.TelecomNumber" mutable="true">
+      <key-map field-name="telecomContactMechId"/></relationship>
+    <relationship type="one" title="Email" related="netsuite.party.contact.ContactMech" short-alias="emailContactMech" mutable="true">
+      <key-map field-name="emailContactMechId"/></relationship>
+    <index name="CITY_IDX"><index-field name="city"/></index>
+    <index name="POSTAL_CODE_IDX"><index-field name="postalCode"/></index>
+  </entity>
+  <entity entity-name="TelecomNumber" package="netsuite.party.contact" use="nontransactional" cache="never">
+    <field name="contactMechId" type="id" is-pk="true"/>
+    <field name="countryCode" type="text-short"/>
+    <field name="areaCode" type="text-short"/>
+    <field name="contactNumber" type="text-short"/>
+    <field name="askForName" type="text-medium"/>
+    <relationship type="one" related="netsuite.party.contact.ContactMech"/>
+    <index name="AREA_CONTACT_IDX"><index-field name="areaCode"/><index-field name="contactNumber"/></index>
+  </entity>
+</entities>

@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<services xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+          xsi:noNamespaceSchemaLocation="http://moqui.org/xsd/service-definition-3.xsd">
+  <service verb="create" noun="LoopUserAccount" authenticate="anonymous-all">
+    <description>
+      Creates a new SystemMessage entry to store user account details.
+    </description>
+    <in-parameters>
+      <parameter name="username" required="true"/>
+      <parameter name="organizationName" required="true"/>
+      <parameter name="loopUrl" required="true"/>
+      <parameter name="password" required="true"/>
+    </in-parameters>
+    <out-parameters>
+      <parameter name="systemMessageId"/>
+    </out-parameters>
+    <actions>
+      <set field="createdTimestamp" from="ec.user.nowTimestamp"/>
+      <!-- Create SystemMessage entry -->
+      <service-call name="create#SystemMessage"
+                    in-map="[messageTypeEnumId:'MsgSystem',
+                              messageDate:createdTimestamp,
+                              subject:username,
+                              content:'User account created for ' + organizationName,
+                              loopUrl:loopUrl,
+                              password:password]"
+                    out-map="messageOut"/>
+
+      <set field="systemMessageId" from="messageOut.systemMessageId"/>
+    </actions>
+  </service>
+</services>

@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<services xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+          xsi:noNamespaceSchemaLocation="http://moqui.org/xsd/service-definition-3.xsd">
+  <service verb="create" noun="SystemMessageRemote" authenticate="anonymous-all">
+    <description>
+      Creates a new SystemMessage entry to store user account details.
+    </description>
+    <in-parameters>
+      <parameter name="username" required="true"/>
+      <parameter name="organizationName" required="true"/>
+      <parameter name="sftpUrl" required="true"/>
+      <parameter name="password" required="true"/>
+    </in-parameters>
+    <out-parameters>
+      <parameter name="systemMessageRemoteId"/>
+    </out-parameters>
+    <actions>
+      <set field="createdTimestamp" from="ec.user.nowTimestamp"/>
+      <!-- Create SystemMessage entry -->
+      <service-call name="create#SystemMessageRemote"
+                    in-map="[
+                              username:username,
+                              description:'User account created for ' + organizationName,
+                              sendUrl:sftpUrl,
+                              password:password]"
+                    out-map="messageOut"/>
+
+      <set field="systemMessageRemoteId" from="messageOut.systemMessageRemoteId"/>
+      <if condition="systemMessageRemoteId == null">
+        <return error="true" message="Failed to create SystemMessageRemote. No valid ID returned."/>
+      </if>
+      <!-- Step 2: Find the partyId associated with the username -->
+      <entity-find entity-name="moqui.security.UserAccount" list="existingUaList">
+        <econdition field-name="username" value="${username}" ignore-case="true"/>
+      </entity-find>
+
+      <!-- If no user is found, return an error -->
+      <if condition="existingUaList.size() == 0">
+        <return error="true" message="No user found with the username: ${username}"/>
+      </if>
+
+      <!-- Retrieve the partyId -->
+      <set field="partyId" from="existingUaList[0].partyId"/>
+      <!-- Step 3: Associate SystemMessageRemote with PartySystemMessageRemote -->
+      <set field="assocTypeId" from="'SFTP_CREDENTIALS'"/>
+      <set field="fromDate" from="ec.user.nowTimestamp"/>
+      <service-call name="create#PartySystemMessageRemote"
+                    in-map="[
+                            partyId:partyId,
+                            systemMessageRemoteId:systemMessageRemoteId,
+                            fromDate:timestamp,
+                            assocTypeId:assocTypeId
+                          ]"/>
+
+      <!-- Final Success Message -->
+      <set field="statusMessage" from="'SFTP Account successfully created and linked to the user party.'"/>
+    </actions>
+  </service>
+</services>
+

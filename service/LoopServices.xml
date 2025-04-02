@@ -7,6 +7,7 @@
     </description>
     <in-parameters>
       <parameter name="accessKey" required="true"/>
+      <parameter name="sharedSecret" required="true"/>
     </in-parameters>
     <out-parameters>
       <parameter name="systemMessageRemoteId"/>
@@ -36,7 +37,8 @@
 
       <!-- Step 2: Create SystemMessageRemote entry -->
       <service-call name="create#SystemMessageRemote"
-                    in-map="[accessKey:accessKey]"
+                    in-map="[accessKey:accessKey,
+                             sharedSecret:sharedSecret]"
                     out-map="systemMessageOut"/>
       <set field="systemMessageRemoteId" from="systemMessageOut.systemMessageRemoteId"/>
 

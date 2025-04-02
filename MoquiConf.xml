@@ -9,7 +9,7 @@
                        location="component://netsuiteClient/screen/sftpConnection.xml"/>
       <subscreens-item name="netsuiteClientLoop" menu-title="Create Loop Connection" menu-index="97"
                        location="component://netsuiteClient/screen/loopConnection.xml"/>
-      <subscreens-item name="netsuiteClientNetsuite" menu-title="Create Netsuite Connection" menu-index="94"
+      <subscreens-item name="netsuiteClientNetsuite" menu-title="Create Netsuite Connection" menu-index="98"
                        location="component://netsuiteClient/screen/netsuiteConnection.xml"/>
     </screen>
   </screen-facade>

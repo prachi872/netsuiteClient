@@ -29,6 +29,14 @@
             <text-line size="30"/>
           </default-field>
         </field>
+
+        <!-- Webhook Secret  -->
+        <field name="sharedSecret">
+          <default-field title="Webhook Secret">
+            <password size="50"/>
+          </default-field>
+        </field>
+
         <!-- Submit Button -->
         <field name="submitButton">
           <default-field title="Create">

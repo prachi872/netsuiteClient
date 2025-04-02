@@ -3,13 +3,13 @@
           xsi:noNamespaceSchemaLocation="http://moqui.org/xsd/service-definition-3.xsd">
   <service verb="create" noun="NetsuiteSystemMessageRemote" authenticate="anonymous-all">
     <description>
-      Creates a new SystemMessage entry to store user account details.
+      Creates a new SystemMessageRemote entry to store NetSuite connection details.
     </description>
     <in-parameters>
-      <parameter name="username" required="true"/>
-      <parameter name="organizationName" required="true"/>
-      <parameter name="loopUrl" required="true"/>
-      <parameter name="password" required="true"/>
+      <parameter name="remoteId" required="true"/>
+      <parameter name="receiveUrl" required="true"/>
+      <parameter name="sharedSecret" required="true"/>
+      <parameter name="sendSharedSecret" required="true"/>
     </in-parameters>
     <out-parameters>
       <parameter name="systemMessageRemoteId"/>
@@ -19,30 +19,41 @@
       <!-- Create SystemMessage entry -->
       <service-call name="create#SystemMessageRemote"
                     in-map="[
-                              username:username,
-                              description:'User account created for ' + organizationName,
-                              sendUrl:loopUrl,
-                              password:password]"
+                              remoteId:remoteId,
+                              description:'NetSuite connection credentials',
+                              receiveUrl:receiveUrl,
+                              sharedSecret:sharedSecret,
+                              sendSharedSecret:sendSharedSecret]"
                     out-map="messageOut"/>
 
       <set field="systemMessageRemoteId" from="messageOut.systemMessageRemoteId"/>
       <if condition="systemMessageRemoteId == null">
         <return error="true" message="Failed to create SystemMessageRemote. No valid ID returned."/>
       </if>
-      <!-- Step 2: Find the partyId associated with the username -->
-      <entity-find entity-name="moqui.security.UserAccount" list="existingUaList">
-        <econdition field-name="username" value="${username}" ignore-case="true"/>
+      <!-- Step 2: Find the partyId of the currently logged-in user -->
+      <!-- Step 1: Get the currently logged-in userId -->
+      <set field="userId" from="ec.user.userId"/>
+      <if condition="userId == null">
+        <return error="true" message="No logged-in user found."/>
+      </if>
+
+      <!-- Retrieve partyId from UserAccount using userId -->
+      <entity-find entity-name="moqui.security.UserAccount" list="userAccountList">
+        <econdition field-name="userId" value="${userId}"/>
       </entity-find>
 
       <!-- If no user is found, return an error -->
-      <if condition="existingUaList.size() == 0">
-        <return error="true" message="No user found with the username: ${username}"/>
+      <if condition="userAccountList.size() == 0">
+        <return error="true" message="No UserAccount found for the logged-in user (userId: ${userId})."/>
       </if>
 
       <!-- Retrieve the partyId -->
-      <set field="partyId" from="existingUaList[0].partyId"/>
+      <set field="partyId" from="userAccountList[0].partyId"/>
+      <if condition="partyId == null">
+        <return error="true" message="No Party ID associated with the logged-in user (userId: ${userId})."/>
+      </if>
       <!-- Step 3: Associate SystemMessageRemote with PartySystemMessageRemote -->
-      <set field="assocTypeId" from="'LOOP_CREDENTIALS'"/>
+      <set field="assocTypeId" from="'NETSUITE_CREDENTIALS'"/>
       <set field="fromDate" from="ec.user.nowTimestamp"/>
       <service-call name="create#PartySystemMessageRemote"
                     in-map="[
@@ -52,8 +63,7 @@
                             assocTypeId:assocTypeId
                           ]"/>
       <!-- Final Success Message -->
-      <set field="statusMessage" from="'LOOP Account successfully created and linked to the user party.'"/>
+      <set field="statusMessage" from="'NetSuite connection successfully created and linked to the user party.'"/>
     </actions>
   </service>
 </services>
-

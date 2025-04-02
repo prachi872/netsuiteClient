@@ -1,45 +1,59 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- Screen definition for creating a user account -->
+
+<!--
+NetSuite accountId      => SystemMessageRemote.remoteId
+NetSuite token          => SystemMessageRemote.receiveUrl
+NetSuite consumerKey    => SystemMessageRemote.sharedSecret
+NetSuite certificateId  => SystemMessageRemote.sendSharedSecret
+NetSuite accountId      => SystemMessageRemote.remoteId
+-->
+<!-- Screen definition for creating a Netsuite connection -->
 <screen
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
     xsi:noNamespaceSchemaLocation="http://moqui.org/xsd/xml-screen-1.4.xsd"
-    default-menu-title="Create User Account"
-    default-menu-index="1"
+    default-menu-title="Create Netsuite Connection"
+    default-menu-index="2"
     require-authentication="anonymous-all">
-  <!-- Transition to user account details screen -->
-  <transition name="netsuiteUserAccountDetail">
-    <default-response url="../netsuiteUserAccountDetail"/>
-  </transition>
-  <!-- Transition to create a new user account -->
+
+  <!-- Transition to create a new Netsuite connection -->
   <transition name="createNetsuiteConnection">
-    <service-call name="netsuiteService.create#SystemMessageRemote" in-map="context"/>
+    <service-call name="netsuiteService.create#NetsuiteSystemMessageRemote" in-map="context"/>
     <default-response url="."/>
   </transition>
-  <!-- Dialog container for creating a user account -->
+
+  <!-- Dialog container for creating a Netsuite connection -->
   <widgets>
-    <container-dialog id="CreateUserNetsuiteAccountDialog" button-text="Create Netsuite Account">
-      <form-single name="CreateUserNetsuiteAccount" transition="createNetsuiteConnection">
-        <!-- form fields -->
-        <field name="username">
-          <default-field title="Netsuite Account Id">
+    <container-dialog id="CreateNetsuiteConnectionDialog" button-text="Create Netsuite Connection">
+      <form-single name="CreateNetsuiteConnection" transition="createNetsuiteConnection">
+
+        <!-- Netsuite Account ID -->
+        <field name="remoteId">
+          <default-field title="NetSuite Account Id">
             <text-line size="20"/>
           </default-field>
         </field>
-        <field name="organizationName">
-          <default-field title="Organization Name">
-            <text-line size="40"/>
+
+        <!-- Hidden Token ID -->
+        <field name="receiveUrl">
+          <default-field title="NetSuite Token">
+            <password size="30"/>
           </default-field>
         </field>
-        <field name="sftpUrl">
-          <default-field title="SFTP URL">
-            <text-line size="30"/>
+
+        <!-- Consumer Key -->
+        <field name="sharedSecret">
+          <default-field title="NetSuite Consumer Key">
+            <password size="50"/>
           </default-field>
         </field>
-        <field name="password">
-          <default-field title="Password">
-            <password size="15"/>
+
+        <!-- Certificate Key -->
+        <field name="sendSharedSecret">
+          <default-field title="NetSuite Certificate Id">
+            <password size="50"/>
           </default-field>
         </field>
+
         <!-- Submit Button -->
         <field name="submitButton">
           <default-field title="Create">
